@@ -1,0 +1,70 @@
+name: yorijori
+description: "A new Flutter project."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+    # YouTube 플레이어
+  youtube_player_flutter: ^9.0.0
+  
+  # 로컬 데이터베이스 (Drift 권장 - 타입 안전성)
+  drift: ^2.14.1
+  sqlite3_flutter_libs: ^0.5.18
+  path_provider: ^2.1.1
+  path: ^1.8.3
+  
+  # HTTP 통신
+  dio: ^5.4.0
+  
+  # 이미지 캐싱
+  cached_network_image: ^3.3.1
+  
+  # 화면 유지 (요리 중 화면 꺼짐 방지)
+  wakelock_plus: ^1.1.2
+  
+  # 로딩 애니메이션
+  lottie: ^3.0.0
+  
+  # JSON 직렬화
+  json_annotation: ^4.8.1
+  
+  # 상태 관리 (선택: Provider 또는 Riverpod)
+  provider: ^6.1.1
+  
+  # 의존성 주입 (선택)
+  get_it: ^7.6.4
+  
+  # URL 유효성 검증 (내장 정규식 사용 가능하지만 편의를 위해)
+  url_launcher: ^6.2.2
+  
+  # 날짜 포맷팅
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  drift_dev: ^2.14.1
+  
+  # JSON 코드 생성
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+
+flutter:
+
+  uses-material-design: true
+
