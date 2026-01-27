@@ -119,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
               : _buildRecipeList(),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddRecipeDialog,
-        backgroundColor: AppConstants.primaryColor,
+        backgroundColor: const Color.fromRGBO(230, 81, 0, 1),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

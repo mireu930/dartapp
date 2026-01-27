@@ -11,7 +11,7 @@ import google.generativeai as genai
 
 # ==========================================
 # [설정] 구글 Gemini API 키
-GEMINI_API_KEY = "" # 👈 여기에 키를 꼭 넣어주세요!
+GEMINI_API_KEY = "AIzaSyAaMcNkKTcq8qjUgBCMPyN7xRwlg0MUFlQ" # 👈 여기에 키를 꼭 넣어주세요!
 # ==========================================
 
 genai.configure(api_key=GEMINI_API_KEY)
