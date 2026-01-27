@@ -126,10 +126,22 @@ class ApiService {
       // 성공 응답 파싱
       if (response.statusCode == 200 && response.data != null) {
         try {
-          return RecipeApiResponse.fromJson(response.data);
-        } catch (e) {
+          // 디버깅: 실제 응답 데이터 로깅
+          print('📥 API 응답 데이터: ${response.data}');
+          
+          // 응답 데이터 정규화 (null 체크 및 기본값 처리)
+          final data = response.data as Map<String, dynamic>;
+          final normalizedData = _normalizeApiResponse(data);
+          
+          print('📦 정규화된 데이터: $normalizedData');
+          
+          return RecipeApiResponse.fromJson(normalizedData);
+        } catch (e, stackTrace) {
+          print('❌ 파싱 에러: $e');
+          print('📋 스택 트레이스: $stackTrace');
+          print('📥 원본 응답: ${response.data}');
           throw ApiException(
-            message: '응답 데이터를 파싱할 수 없습니다.',
+            message: '응답 데이터를 파싱할 수 없습니다: $e',
             errorCode: 'PARSE_ERROR',
             statusCode: response.statusCode,
           );
@@ -179,5 +191,25 @@ class ApiService {
   /// Base URL 변경 (개발/프로덕션 전환용)
   void setBaseUrl(String baseUrl) {
     _dio.options.baseUrl = baseUrl;
+  }
+
+  /// API 응답 데이터 정규화 (null 체크 및 기본값 처리)
+  Map<String, dynamic> _normalizeApiResponse(Map<String, dynamic> data) {
+    return {
+      'youtubeId': data['youtubeId'] as String? ?? '',
+      'title': data['title'] as String? ?? '제목 없음',
+      'channelName': data['channelName'] as String? ?? data['channel'] as String? ?? '알 수 없음',
+      'thumbnailUrl': data['thumbnailUrl'] as String? ?? data['thumbnail'] as String? ?? '',
+      'ingredients': (data['ingredients'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      'steps': (data['steps'] as List<dynamic>?)?.map((step) {
+        if (step is Map<String, dynamic>) {
+          return {
+            'time': step['time'] as int? ?? 0,
+            'desc': step['desc'] as String? ?? step['description'] as String? ?? '',
+          };
+        }
+        return {'time': 0, 'desc': ''};
+      }).toList() ?? [],
+    };
   }
 }

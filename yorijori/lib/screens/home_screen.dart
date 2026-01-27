@@ -32,17 +32,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 레시피 목록 로드
   Future<void> _loadRecipes() async {
+    print('🏠 [HomeScreen] 레시피 목록 로드 시작');
     setState(() {
       _isLoading = true;
     });
 
     try {
       final recipes = await _recipeService.getAllRecipes();
+      print('🏠 [HomeScreen] 레시피 ${recipes.length}개 수신');
+      for (var recipe in recipes) {
+        print('   - ${recipe.title} (ID: ${recipe.id}, 재료: ${recipe.ingredients.length}개, 단계: ${recipe.steps.length}개)');
+      }
+      
       setState(() {
         _recipes = recipes;
         _isLoading = false;
       });
-    } catch (e) {
+      print('🏠 [HomeScreen] 화면 업데이트 완료: ${_recipes.length}개 표시');
+    } catch (e, stackTrace) {
+      print('❌ [HomeScreen] 레시피 로드 실패: $e');
+      print('📋 스택: $stackTrace');
       setState(() {
         _isLoading = false;
       });

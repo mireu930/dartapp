@@ -8,7 +8,7 @@ class AppConstants {
 
   // API 설정
   /// 개발 환경 API Base URL
-  static const String devApiBaseUrl = 'http://localhost:8000';
+  static const String devApiBaseUrl = 'http://10.0.2.2:8000';
   
   /// 프로덕션 환경 API Base URL (배포 시 변경 필요)
   static const String prodApiBaseUrl = 'https://api.yorijori.com';
