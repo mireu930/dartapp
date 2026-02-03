@@ -83,9 +83,9 @@ static const String prodApiBaseUrl = 'https://yorijori-api.onrender.com';
    앱에서는 "이 영상에는 자막이 없고, 오디오 다운로드가 YouTube 제한으로 불가합니다. 자막이 있는 요리 영상으로 시도해 주세요." 라고 안내됩니다. 자막이 있는 요리 영상으로 테스트하세요.
 
 2. **쿠키로 오디오 다운로드 허용 (선택)**  
-   - 브라우저에서 YouTube에 로그인한 뒤, [Netscape 형식 cookies.txt](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp) 를 내보내기(확장 프로그램 또는 개발자 도구 활용).  
-   - **로컬**: `backend/.env`에 `YT_DLP_COOKIES_PATH=/절대경로/cookies.txt` 추가.  
-   - **Render**: 환경 변수 `YT_DLP_COOKIES`에 cookies.txt **파일 내용 전체**를 붙여넣기 (용량 제한 있음).
+   - **로컬(가장 간단)**: Chrome에서 YouTube 로그인 후 `backend/.env`에 **`YT_DLP_BROWSER=chrome`** 만 추가. 서버가 Chrome 쿠키를 사용합니다.  
+   - **로컬(파일)**: [Netscape 형식 cookies.txt](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp) 내보내기 후 `YT_DLP_COOKIES_PATH=/절대경로/cookies.txt` 설정.  
+   - **Render**: 환경 변수 `YT_DLP_COOKIES`에 cookies.txt 내용을 붙여넣기 (줄바꿈은 `\n` 또는 한 줄로).
 
 ---
 

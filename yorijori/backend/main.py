@@ -119,7 +119,7 @@ def get_video_metadata(url: str, video_id: str | None = None) -> dict:
     if meta:
         return meta
     # 2) yt-dlp 사용 (봇 차단 시 쿠키 필요할 수 있음)
-    ydl_opts = {'quiet': True, 'no_warnings': True}
+    ydl_opts = {'quiet': True, 'no_warnings': True, **_get_yt_dlp_cookie_opts()}
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         return {
@@ -128,23 +128,35 @@ def get_video_metadata(url: str, video_id: str | None = None) -> dict:
             "thumbnail": info.get('thumbnail', ''),
         }
 
-def _get_yt_dlp_cookiefile():
-    """yt-dlp용 쿠키 파일 경로 반환. 없으면 None."""
+def _get_yt_dlp_cookie_opts():
+    """yt-dlp에 넘길 쿠키 옵션 반환. 쿠키 파일 경로 또는 브라우저에서 읽기."""
+    # 1) 브라우저 쿠키 (로컬 전용, Chrome 등에 YouTube 로그인되어 있어야 함)
+    browser = (os.environ.get("YT_DLP_BROWSER") or "").strip().lower()
+    if browser in ("chrome", "firefox", "safari", "edge", "chromium", "opera", "brave"):
+        print("   🍪 yt-dlp: 브라우저 쿠키 사용 (YT_DLP_BROWSER=%s)" % browser)
+        return {"cookiesfrombrowser": (browser,)}
+
+    # 2) 쿠키 파일 경로
     path = (os.environ.get("YT_DLP_COOKIES_PATH") or "").strip()
     if path and os.path.isfile(path):
-        return path
-    # 인라인 쿠키(Netscape 형식): env에 넣고 YT_DLP_COOKIES 로 전달 시 임시 파일로 저장
+        print("   🍪 yt-dlp: 쿠키 파일 사용 (%s)" % path)
+        return {"cookiefile": path}
+
+    # 3) 인라인 쿠키 (Netscape 형식). .env에서 \\n 은 실제 줄바꿈으로 치환
     raw = (os.environ.get("YT_DLP_COOKIES") or "").strip()
     if not raw:
-        return None
+        return {}
+    raw = raw.replace("\\n", "\n")
     try:
         import tempfile
         fd, tmp = tempfile.mkstemp(suffix=".txt", prefix="yt_dlp_cookies_")
-        with os.fdopen(fd, "w") as f:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(raw)
-        return tmp
-    except Exception:
-        return None
+        print("   🍪 yt-dlp: 인라인 쿠키 사용 (임시 파일)")
+        return {"cookiefile": tmp}
+    except Exception as e:
+        print("   ⚠️ yt-dlp 쿠키 임시 파일 생성 실패: %s" % e)
+        return {}
 
 
 def download_audio(url, video_id):
@@ -157,10 +169,8 @@ def download_audio(url, video_id):
         'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
         'outtmpl': f'{video_id}',
         'quiet': True,
+        **_get_yt_dlp_cookie_opts(),
     }
-    cookiefile = _get_yt_dlp_cookiefile()
-    if cookiefile:
-        base_opts['cookiefile'] = cookiefile
 
     # 여러 포맷 순서로 시도 (일부 영상은 bestaudio가 없고 best만 있음)
     for fmt in [
