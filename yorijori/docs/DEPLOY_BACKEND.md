@@ -31,7 +31,9 @@
    - **Instance Type**: Free 선택 (무료는 15분 미사용 시 슬립 → 첫 요청 시 지연 가능).
 4. **Environment** 탭에서 환경 변수 추가:
    - `GEMINI_API_KEY` = (Google AI Studio에서 발급한 Gemini API 키).
-   - **(선택)** `YOUTUBE_API_KEY` = YouTube Data API v3 키.  
+   - **(선택)** `YOUTUBE_API_KEY` = YouTube Data API v3 키.
+   - **(권장)** `YORIJORI_SKIP_AUDIO_ANALYSIS` = `true`  
+     → 클라우드에서는 자막 없는 영상/쇼츠 등에서 오디오 분석을 시도하지 않고, 바로 "자막이 켜져 있는 영상으로 시도해 주세요" 안내. 봇 에러와 긴 대기를 피할 수 있음.  
      YouTube가 “Sign in to confirm you're not a bot” 등으로 차단할 때, 메타데이터(제목·채널·썸네일)는 이 API로 조회합니다. [Google Cloud Console](https://console.cloud.google.com/) → API 및 서비스 → 사용 설정 → **YouTube Data API v3** → 사용자 인증 정보에서 API 키 생성.
 5. **Create Web Service**로 배포 시작.
 
@@ -75,14 +77,17 @@ static const String prodApiBaseUrl = 'https://yorijori-api.onrender.com';
 
 ## 4. 자막 없을 때 "Sign in to confirm you're not a bot" (오디오 다운로드 실패)
 
-자막이 없는 영상은 오디오를 다운로드해 AI가 듣고 분석하는데, 이때 YouTube가 봇으로 차단해 **"Sign in to confirm you're not a bot"** 이 나올 수 있습니다.
+자막이 없는 영상(또는 Shorts처럼 자막 API로 가져오지 못하는 경우)은 오디오 다운로드로 넘어가는데, 클라우드에서는 YouTube가 봇으로 차단해 **"Sign in to confirm you're not a bot"** 이 나올 수 있습니다.
 
 **가능한 대응:**
 
-1. **자막 있는 영상 사용**  
+1. **Render 등 클라우드에서 `YORIJORI_SKIP_AUDIO_ANALYSIS=true` 설정 (권장)**  
+   자막을 못 가져오면 오디오 분석을 시도하지 않고, 곧바로 "자막이 켜져 있는 영상으로 시도해 주세요" 메시지를 반환합니다. 봇 에러와 긴 대기를 피할 수 있습니다.
+
+2. **자막 있는 영상 사용**  
    앱에서는 "이 영상에는 자막이 없고, 오디오 다운로드가 YouTube 제한으로 불가합니다. 자막이 있는 요리 영상으로 시도해 주세요." 라고 안내됩니다. 자막이 있는 요리 영상으로 테스트하세요.
 
-2. **쿠키로 오디오 다운로드 허용 (선택)**  
+3. **쿠키로 오디오 다운로드 허용 (선택, 로컬 위주)**  
    - **로컬(가장 간단)**: Chrome에서 YouTube 로그인 후 `backend/.env`에 **`YT_DLP_BROWSER=chrome`** 만 추가. 서버가 Chrome 쿠키를 사용합니다.  
    - **로컬(파일)**: [Netscape 형식 cookies.txt](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp) 내보내기 후 `YT_DLP_COOKIES_PATH=/절대경로/cookies.txt` 설정.  
    - **Render**: 환경 변수 `YT_DLP_COOKIES`에 cookies.txt **전체 내용**을 붙여넣기. (한 줄로 붙어 들어가도 서버에서 자동으로 줄을 나눕니다. 그래도 실패하면 줄바꿈 자리에 `\n` 두 글자를 넣어서 다시 시도.)  

@@ -258,7 +258,17 @@ async def analyze_recipe(request: AnalyzeRequest):
         response = model.generate_content(final_prompt)
 
     except Exception:
-        # [시도 2] 자막 없으면 오디오 분석
+        # [시도 2] 자막 없으면 오디오 분석 (클라우드에서는 보통 봇 차단으로 실패 → 건너뛰기 옵션)
+        skip_audio = (os.environ.get("YORIJORI_SKIP_AUDIO_ANALYSIS") or "").strip().lower() in ("1", "true", "yes")
+        if skip_audio:
+            print("   👉 자막 없음. 오디오 분석 건너뜀 (YORIJORI_SKIP_AUDIO_ANALYSIS)")
+            raise HTTPException(
+                status_code=500,
+                detail=_error_body(
+                    "NO_TRANSCRIPT",
+                    "이 영상의 자막을 가져올 수 없습니다. 자막이 켜져 있는 다른 요리 영상으로 시도해 주세요.",
+                ),
+            )
         print("   👉 자막 없음. 오디오 분석 모드로 전환합니다... (시간이 좀 걸려요)")
         try:
             audio_path = download_audio(request.url, video_id)
