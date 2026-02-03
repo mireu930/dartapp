@@ -86,7 +86,7 @@ static const String prodApiBaseUrl = 'https://yorijori-api.onrender.com';
    - **로컬(가장 간단)**: Chrome에서 YouTube 로그인 후 `backend/.env`에 **`YT_DLP_BROWSER=chrome`** 만 추가. 서버가 Chrome 쿠키를 사용합니다.  
    - **로컬(파일)**: [Netscape 형식 cookies.txt](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp) 내보내기 후 `YT_DLP_COOKIES_PATH=/절대경로/cookies.txt` 설정.  
    - **Render**: 환경 변수 `YT_DLP_COOKIES`에 cookies.txt **전체 내용**을 붙여넣기. (한 줄로 붙어 들어가도 서버에서 자동으로 줄을 나눕니다. 그래도 실패하면 줄바꿈 자리에 `\n` 두 글자를 넣어서 다시 시도.)  
-     **참고**: 클라우드 서버 IP는 YouTube가 봇으로 차단해 쿠키를 넣어도 실패할 수 있습니다. 그 경우 자막 있는 영상만 지원하거나, 오디오 분석은 로컬에서만 사용하는 수밖에 없습니다.
+     **참고**: Render 등 클라우드 IP는 YouTube가 봇으로 차단하는 경우가 많아, 쿠키·설정을 넣어도 **자막 없는 영상의 오디오 분석은 실패할 수 있습니다.** 이 경우 서비스에서는 **자막이 있는 요리 영상만 지원**하는 것으로 두고, 앱에서 해당 안내 메시지가 나오면 “자막 있는 영상으로 시도해 주세요”라고 안내하는 것이 좋습니다.
 
 ---
 

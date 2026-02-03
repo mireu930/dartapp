@@ -174,6 +174,8 @@ def download_audio(url, video_id):
         'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
         'outtmpl': f'{video_id}',
         'quiet': True,
+        # 클라우드 IP 차단 완화 시도 (android 클라이언트 우선)
+        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         **_get_yt_dlp_cookie_opts(),
     }
 
@@ -275,7 +277,7 @@ async def analyze_recipe(request: AnalyzeRequest):
             err_str = str(e)
             if "bot" in err_str.lower() or "Sign in" in err_str or "cookies" in err_str.lower():
                 msg = (
-                    "이 영상에는 자막이 없고, 오디오 다운로드가 YouTube 제한으로 불가합니다. "
+                    "이 영상에는 자막이 없어, 오디오로 분석을 시도했지만 YouTube 접근 제한으로 실패했습니다. "
                     "자막이 있는 요리 영상으로 시도해 주세요."
                 )
             else:
