@@ -148,23 +148,42 @@ def _get_yt_dlp_cookiefile():
 
 
 def download_audio(url, video_id):
-    """자막이 없을 때 오디오를 다운로드하는 함수. 쿠키 설정 시 YouTube 봇 차단 완화."""
+    """자막이 없을 때 오디오를 다운로드. 포맷 불가 시 best(영상+음성)로 재시도."""
     for file in glob.glob(f"{video_id}.*"):
         try: os.remove(file)
         except: pass
 
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3',}],
+    base_opts = {
+        'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
         'outtmpl': f'{video_id}',
         'quiet': True,
     }
     cookiefile = _get_yt_dlp_cookiefile()
     if cookiefile:
-        ydl_opts['cookiefile'] = cookiefile
-    with YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
-    return f"{video_id}.mp3"
+        base_opts['cookiefile'] = cookiefile
+
+    # 여러 포맷 순서로 시도 (일부 영상은 bestaudio가 없고 best만 있음)
+    for fmt in [
+        'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',
+        'bestaudio/best',
+        'best',  # 영상+음성 통합 → FFmpeg이 음성만 추출
+    ]:
+        for f in glob.glob(f"{video_id}.*"):
+            try: os.remove(f)
+            except: pass
+        ydl_opts = {**base_opts, 'format': fmt}
+        try:
+            with YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            out = f"{video_id}.mp3"
+            if os.path.exists(out):
+                return out
+        except Exception as e:
+            err = str(e)
+            if "Requested format is not available" in err or "format is not available" in err:
+                continue
+            raise
+    raise RuntimeError("사용 가능한 오디오 포맷이 없습니다.")
 
 @app.post("/api/v1/analyze")
 async def analyze_recipe(request: AnalyzeRequest):
