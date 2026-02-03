@@ -10,15 +10,23 @@
 ### 1) 저장소 준비
 
 - 이 프로젝트를 **GitHub**에 올려 두세요.
-- `backend/` 폴더에 `requirements.txt`, `Dockerfile`, `main.py`가 있어야 합니다.
+- **저장소 루트**에 `Dockerfile`(백엔드 빌드용)이 있어야 합니다. 없으면 Render가 `open Dockerfile: no such file or directory` 로 실패합니다.
+- 터미널에서 확인 후 푸시:
+  ```bash
+  git status   # Dockerfile이 보여야 함
+  git add Dockerfile render.yaml backend/
+  git commit -m "Add Dockerfile and render.yaml for Render"
+  git push
+  ```
+- **Blueprint 사용 시**: 루트에 `render.yaml`이 있으면 Render 대시보드에서 **New → Blueprint**로 이 저장소를 연결해 한 번에 배포할 수 있습니다.
 
 ### 2) Render에서 서비스 생성
 
 1. [render.com](https://render.com) 가입 후 로그인.
 2. **Dashboard** → **New** → **Web Service**.
 3. GitHub 저장소 연결 후:
-   - **Root Directory**: `backend` 로 설정 (프로젝트 루트가 아니라 `backend` 폴더).
-   - **Environment**: **Docker** 선택.
+   - **Root Directory**: **비워 두기** (지우거나 비워 두면 저장소 루트 사용).
+   - **Environment**: **Docker** 선택. (루트의 `Dockerfile`이 백엔드용으로 사용됩니다.)
    - **Instance Type**: Free 선택 (무료는 15분 미사용 시 슬립 → 첫 요청 시 지연 가능).
 4. **Environment** 탭에서 환경 변수 추가:
    - `GEMINI_API_KEY` = (Google AI Studio에서 발급한 Gemini API 키).
@@ -82,3 +90,14 @@ static const String prodApiBaseUrl = 'https://yorijori-api.onrender.com';
 | 4 | 심사 시 **분석하기**는 클라우드 서버로 요청 → 항상 동작 가능 |
 
 이렇게 하면 심사관 기기에서 **분석하기**를 눌러도 클라우드 서버로 요청이 가므로, “분석하기 버튼 탭 시 에러”로 인한 2.1 거절을 피할 수 있습니다.
+
+---
+
+## 6. "open Dockerfile: no such file or directory" 나올 때
+
+- **원인**: Render가 저장소에서 `Dockerfile`을 찾지 못함 (루트에 없거나, 커밋/푸시가 안 됨).
+- **해결**:
+  1. 프로젝트 **루트**에 `Dockerfile`이 있는지 확인.
+  2. `git add Dockerfile && git commit -m "Add Dockerfile" && git push` 로 푸시.
+  3. Render에서 **Root Directory**는 비워 두기.
+  4. GitHub에 푸시한 브랜치가 Render가 연결한 브랜치와 같은지 확인.
