@@ -9,18 +9,14 @@ class ApiException implements Exception {
   final String? errorCode;
   final int? statusCode;
 
-  ApiException({
-    required this.message,
-    this.errorCode,
-    this.statusCode,
-  });
+  ApiException({required this.message, this.errorCode, this.statusCode});
 
   @override
   String toString() => message;
 }
 
 /// API 서비스 클래스
-/// 
+///
 /// [REQ-1.2] FastAPI 서버와 통신하여 레시피 분석 요청
 class ApiService {
   late final Dio _dio;
@@ -35,6 +31,8 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+          'User-Agent': 'YorijoriApp/1.0',
         },
       ),
     );
@@ -92,20 +90,23 @@ class ApiService {
   }
 
   /// YouTube URL로 레시피 분석 요청
-  /// 
+  ///
   /// [REQ-1.1] URL 유효성 검증 후 서버에 요청
   /// [REQ-1.2] 서버로부터 구조화된 JSON 데이터 수신
   /// [REQ-1.3] 예외 처리 (NO_TRANSCRIPT, NOT_COOKING 등)
-  /// 
+  ///
   /// Parameters:
   /// - [youtubeUrl]: 분석할 YouTube 영상 URL
-  /// 
+  ///
   /// Returns:
   /// - [RecipeApiResponse]: 분석된 레시피 데이터
-  /// 
+  ///
   /// Throws:
   /// - [ApiException]: API 통신 실패 또는 에러 응답
   Future<RecipeApiResponse> analyzeRecipe(String youtubeUrl) async {
+    print(
+      '🚀 요청 보내는 전체 주소: ${_dio.options.baseUrl}${AppConstants.analyzeEndpoint}',
+    );
     // URL 유효성 검증
     if (!Validators.isValidYouTubeUrl(youtubeUrl)) {
       throw ApiException(
@@ -118,9 +119,7 @@ class ApiService {
       // API 요청
       final response = await _dio.post(
         AppConstants.analyzeEndpoint,
-        data: {
-          'url': youtubeUrl,
-        },
+        data: {'url': youtubeUrl},
       );
 
       // 성공 응답 파싱
@@ -128,13 +127,13 @@ class ApiService {
         try {
           // 디버깅: 실제 응답 데이터 로깅
           print('📥 API 응답 데이터: ${response.data}');
-          
+
           // 응답 데이터 정규화 (null 체크 및 기본값 처리)
           final data = response.data as Map<String, dynamic>;
           final normalizedData = _normalizeApiResponse(data);
-          
+
           print('📦 정규화된 데이터: $normalizedData');
-          
+
           return RecipeApiResponse.fromJson(normalizedData);
         } catch (e, stackTrace) {
           print('❌ 파싱 에러: $e');
@@ -156,7 +155,7 @@ class ApiService {
       // DioException에서 ApiException 추출
       if (e.error is ApiException) {
         final apiException = e.error as ApiException;
-        
+
         // 에러 코드에 따른 메시지 매핑
         String errorMessage = apiException.message;
         if (apiException.errorCode == 'NO_TRANSCRIPT') {
@@ -182,9 +181,7 @@ class ApiService {
       if (e is ApiException) {
         rethrow;
       }
-      throw ApiException(
-        message: e.toString(),
-      );
+      throw ApiException(message: e.toString());
     }
   }
 
@@ -198,18 +195,31 @@ class ApiService {
     return {
       'youtubeId': data['youtubeId'] as String? ?? '',
       'title': data['title'] as String? ?? '제목 없음',
-      'channelName': data['channelName'] as String? ?? data['channel'] as String? ?? '알 수 없음',
-      'thumbnailUrl': data['thumbnailUrl'] as String? ?? data['thumbnail'] as String? ?? '',
-      'ingredients': (data['ingredients'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      'steps': (data['steps'] as List<dynamic>?)?.map((step) {
-        if (step is Map<String, dynamic>) {
-          return {
-            'time': step['time'] as int? ?? 0,
-            'desc': step['desc'] as String? ?? step['description'] as String? ?? '',
-          };
-        }
-        return {'time': 0, 'desc': ''};
-      }).toList() ?? [],
+      'channelName':
+          data['channelName'] as String? ??
+          data['channel'] as String? ??
+          '알 수 없음',
+      'thumbnailUrl':
+          data['thumbnailUrl'] as String? ?? data['thumbnail'] as String? ?? '',
+      'ingredients':
+          (data['ingredients'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      'steps':
+          (data['steps'] as List<dynamic>?)?.map((step) {
+            if (step is Map<String, dynamic>) {
+              return {
+                'time': step['time'] as int? ?? 0,
+                'desc':
+                    step['desc'] as String? ??
+                    step['description'] as String? ??
+                    '',
+              };
+            }
+            return {'time': 0, 'desc': ''};
+          }).toList() ??
+          [],
     };
   }
 }

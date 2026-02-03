@@ -1,0 +1,87 @@
+# Uncomment this line to define a global platform for your project
+platform :ios, '15.0'
+
+# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+  end
+
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  use_frameworks!
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+post_install do |installer|
+  # Flutter 엔진 경로를 플러그인 Pod에서 찾을 수 있도록 추가 (Flutter/Flutter.h 오류 해결)
+  flutter_engine_paths = [
+    "#{flutter_root}/bin/cache/artifacts/engine/ios/Flutter.xcframework/ios-arm64_x86_64-simulator",
+    "#{flutter_root}/bin/cache/artifacts/engine/ios/Flutter.xcframework/ios-arm64",
+    "#{flutter_root}/bin/cache/artifacts/engine/ios-release/Flutter.xcframework/ios-arm64_x86_64-simulator",
+    "#{flutter_root}/bin/cache/artifacts/engine/ios-release/Flutter.xcframework/ios-arm64",
+    "#{flutter_root}/bin/cache/artifacts/engine/ios-profile/Flutter.xcframework/ios-arm64_x86_64-simulator",
+    "#{flutter_root}/bin/cache/artifacts/engine/ios-profile/Flutter.xcframework/ios-arm64",
+  ]
+
+  # OrderedSet "unsupported Swift architecture" 해결: 시뮬레이터는 arm64만 빌드 (Apple Silicon)
+  installer.pods_project.build_configurations.each do |config|
+    config.build_settings['VALID_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+  end
+
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['GCC_GENERATE_DEBUGGING_INFORMATION'] = 'YES'
+      config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+      config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'NO'
+      config.build_settings['VALID_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+
+      # Flutter에 의존하는 플러그인 타깃에 Flutter 프레임워크 검색 경로 추가
+      if target.name != 'Flutter'
+        existing = config.build_settings['FRAMEWORK_SEARCH_PATHS'] || '$(inherited)'
+        existing_array = existing.is_a?(Array) ? existing : [existing]
+        config.build_settings['FRAMEWORK_SEARCH_PATHS'] = existing_array + flutter_engine_paths
+      end
+    end
+  end
+
+  # Runner 타깃 Release/Profile 빌드 시 Flutter.framework 링크 (IPA 아카이브 Undefined symbol 해결)
+  # Pods-Runner.release.xcconfig / profile.xcconfig에 Generated.xcconfig include + Flutter 엔진 경로·플래그 추가
+  flutter_release_path = "#{flutter_root}/bin/cache/artifacts/engine/ios-release/Flutter.xcframework/ios-arm64"
+  ['Pods-Runner.release.xcconfig', 'Pods-Runner.profile.xcconfig'].each do |name|
+    xcconfig_path = File.join(installer.sandbox.root, 'Target Support Files', 'Pods-Runner', name)
+    next unless File.exist?(xcconfig_path)
+    content = File.read(xcconfig_path)
+    # FLUTTER_ROOT 등이 필요하므로 Generated.xcconfig를 먼저 로드 (xcconfig 경로는 파일 위치 기준)
+    unless content.include?('Generated.xcconfig')
+      content = "#include \"../../../Flutter/Generated.xcconfig\"\n" + content
+    end
+    next if content.include?('-framework Flutter')
+    content.sub!(/^FRAMEWORK_SEARCH_PATHS = (.*)$/, "FRAMEWORK_SEARCH_PATHS = \\1 \"$(BUILT_PRODUCTS_DIR)\" \"#{flutter_release_path}\"")
+    content.sub!(/^OTHER_LDFLAGS = (.*)$/, "OTHER_LDFLAGS = \\1 -framework Flutter")
+    File.write(xcconfig_path, content)
+  end
+end

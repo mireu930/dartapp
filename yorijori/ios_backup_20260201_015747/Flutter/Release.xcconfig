@@ -1,0 +1,8 @@
+#include? "../Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
+#include "Generated.xcconfig"
+// OrderedSet Swift 아키텍처 오류 방지: 시뮬레이터 arm64만 빌드 (Apple Silicon)
+VALID_ARCHS[sdk=iphonesimulator*] = arm64
+// 아카이브(IPA) 빌드 시 Flutter 프레임워크 링크 (Undefined symbol FlutterMethodChannel 등 해결)
+// Flutter SDK 엔진 경로 (FLUTTER_ROOT + 절대경로 fallback)
+FRAMEWORK_SEARCH_PATHS = $(inherited) "$(BUILT_PRODUCTS_DIR)" "$(FLUTTER_ROOT)/bin/cache/artifacts/engine/ios-release/Flutter.xcframework/ios-arm64" "/opt/homebrew/share/flutter/bin/cache/artifacts/engine/ios-release/Flutter.xcframework/ios-arm64"
+OTHER_LDFLAGS = $(inherited) -framework Flutter

@@ -2,7 +2,10 @@ import os
 import json
 import re
 import glob
+import traceback
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -10,15 +13,66 @@ from yt_dlp import YoutubeDL
 import google.generativeai as genai
 
 # ==========================================
-# [설정] 구글 Gemini API 키
-GEMINI_API_KEY = "" # 👈 여기에 키를 꼭 넣어주세요!
+# [설정] 구글 Gemini API 키 (환경 변수 사용, 클라우드 배포 시 필수)
+# 로컬: .env 파일 또는 export GEMINI_API_KEY=xxx
+# 클라우드: 서비스 대시보드에서 GEMINI_API_KEY 환경 변수 설정
 # ==========================================
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
+GEMINI_API_KEY = (os.environ.get("GEMINI_API_KEY") or "").strip()
+if not GEMINI_API_KEY:
+    raise RuntimeError(
+        "GEMINI_API_KEY가 설정되지 않았습니다. "
+        "로컬: .env 파일에 GEMINI_API_KEY=xxx 추가 또는 export GEMINI_API_KEY=xxx"
+    )
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-2.5-flash',
                               generation_config={"response_mime_type": "application/json"})
 
 app = FastAPI()
+
+# ngrok / Flutter 앱에서 접속할 수 있도록 CORS 허용
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+def _error_body(error_code: str, message: str) -> dict:
+    """앱에서 파싱하는 에러 형식: errorCode, message"""
+    return {"errorCode": error_code, "message": message}
+
+
+@app.exception_handler(HTTPException)
+def http_exception_handler(request, exc: HTTPException):
+    """HTTPException을 앱이 기대하는 JSON 형식으로 반환"""
+    if isinstance(exc.detail, dict) and "errorCode" in exc.detail and "message" in exc.detail:
+        body = exc.detail
+    else:
+        body = _error_body("UNKNOWN", str(exc.detail))
+    return JSONResponse(status_code=exc.status_code, content=body)
+
+
+@app.exception_handler(Exception)
+def unhandled_exception_handler(request, exc: Exception):
+    """처리되지 않은 예외: 터미널에 전체 로그 출력 후 500 반환"""
+    print("=" * 60)
+    print("❌ [서버 에러] 처리되지 않은 예외")
+    print("=" * 60)
+    traceback.print_exc()
+    print("=" * 60)
+    return JSONResponse(
+        status_code=500,
+        content=_error_body("SERVER_ERROR", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."),
+    )
+
 
 class AnalyzeRequest(BaseModel):
     url: str
@@ -60,8 +114,23 @@ def download_audio(url, video_id):
 @app.post("/api/v1/analyze")
 async def analyze_recipe(request: AnalyzeRequest):
     print(f"✅ 분석 요청: {request.url}")
-    video_id = extract_video_id(request.url)
-    metadata = get_video_metadata(request.url)
+    try:
+        video_id = extract_video_id(request.url)
+    except ValueError as e:
+        print(f"❌ URL 파싱 실패: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=_error_body("INVALID_URL", "올바른 YouTube URL을 입력해 주세요."),
+        )
+    try:
+        metadata = get_video_metadata(request.url)
+    except Exception as e:
+        print(f"❌ 영상 정보 조회 실패: {e}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=502,
+            detail=_error_body("VIDEO_ERROR", "영상 정보를 가져올 수 없습니다. 비공개/삭제/지역제한 여부를 확인해 주세요."),
+        )
     
     prompt = """
     너는 요리 레시피 분석 전문가야. 제공된 내용을 바탕으로 요리 재료와 조리 과정을 추출해줘.
@@ -113,7 +182,11 @@ async def analyze_recipe(request: AnalyzeRequest):
                 
         except Exception as e:
             print(f"❌ 오디오 분석 실패: {e}")
-            raise HTTPException(status_code=500, detail="자막도 없고 오디오 분석도 실패했습니다.")
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=500,
+                detail=_error_body("NO_TRANSCRIPT", "자막을 찾을 수 없고 오디오 분석도 실패했습니다."),
+            )
 
     try:
         ai_result = json.loads(response.text)
@@ -164,10 +237,17 @@ async def analyze_recipe(request: AnalyzeRequest):
     except json.JSONDecodeError as e:
         print(f"❌ JSON 파싱 실패: {e}")
         print(f"📋 원본 응답: {response.text}")
-        raise HTTPException(status_code=500, detail=f"AI 응답 JSON 파싱 오류: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=_error_body("PARSE_ERROR", "AI 응답 처리 중 오류가 발생했습니다. 다시 시도해 주세요."),
+        )
     except Exception as e:
         print(f"❌ 예상치 못한 오류: {e}")
-        raise HTTPException(status_code=500, detail=f"AI 응답 오류: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=_error_body("AI_ERROR", f"AI 응답 오류: {str(e)}"),
+        )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

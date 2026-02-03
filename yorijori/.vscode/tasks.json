@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run iOS Simulator (CocoaPods PATH fix)",
+      "type": "shell",
+      "command": "export PATH=\"/usr/local/bin:/opt/homebrew/bin:$PATH\" && flutter run -d 'iPhone 15'",
+      "options": {
+        "env": {
+          "PATH": "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        },
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ]
+}

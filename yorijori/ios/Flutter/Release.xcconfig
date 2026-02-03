@@ -1,1 +1,4 @@
+#include "../Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
+FRAMEWORK_SEARCH_PATHS = $(FRAMEWORK_SEARCH_PATHS) $(FLUTTER_ROOT)/bin/cache/artifacts/engine/ios-release/Flutter.xcframework/ios-arm64
+OTHER_LDFLAGS = $(OTHER_LDFLAGS) -F $(FLUTTER_ROOT)/bin/cache/artifacts/engine/ios-release/Flutter.xcframework/ios-arm64 -framework Flutter
