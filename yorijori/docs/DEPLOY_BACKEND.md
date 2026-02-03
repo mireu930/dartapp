@@ -73,7 +73,23 @@ static const String prodApiBaseUrl = 'https://yorijori-api.onrender.com';
 
 ---
 
-## 4. 무료 플랜 참고 (Render)
+## 4. 자막 없을 때 "Sign in to confirm you're not a bot" (오디오 다운로드 실패)
+
+자막이 없는 영상은 오디오를 다운로드해 AI가 듣고 분석하는데, 이때 YouTube가 봇으로 차단해 **"Sign in to confirm you're not a bot"** 이 나올 수 있습니다.
+
+**가능한 대응:**
+
+1. **자막 있는 영상 사용**  
+   앱에서는 "이 영상에는 자막이 없고, 오디오 다운로드가 YouTube 제한으로 불가합니다. 자막이 있는 요리 영상으로 시도해 주세요." 라고 안내됩니다. 자막이 있는 요리 영상으로 테스트하세요.
+
+2. **쿠키로 오디오 다운로드 허용 (선택)**  
+   - 브라우저에서 YouTube에 로그인한 뒤, [Netscape 형식 cookies.txt](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp) 를 내보내기(확장 프로그램 또는 개발자 도구 활용).  
+   - **로컬**: `backend/.env`에 `YT_DLP_COOKIES_PATH=/절대경로/cookies.txt` 추가.  
+   - **Render**: 환경 변수 `YT_DLP_COOKIES`에 cookies.txt **파일 내용 전체**를 붙여넣기 (용량 제한 있음).
+
+---
+
+## 5. 무료 플랜 참고 (Render)
 
 - **Free** 인스턴스는 약 15분 동안 요청이 없으면 **슬립**합니다.
 - 심사관이 처음 **분석하기**를 누를 때 깨우는 데 30초~1분 걸릴 수 있어, 앱 타임아웃(60초)에 걸릴 수 있습니다.
@@ -83,7 +99,7 @@ static const String prodApiBaseUrl = 'https://yorijori-api.onrender.com';
 
 ---
 
-## 5. 요약
+## 6. 요약
 
 | 단계 | 할 일 |
 |------|--------|
@@ -96,7 +112,7 @@ static const String prodApiBaseUrl = 'https://yorijori-api.onrender.com';
 
 ---
 
-## 6. "open Dockerfile: no such file or directory" 나올 때
+## 7. "open Dockerfile: no such file or directory" 나올 때
 
 - **원인**: Render가 저장소에서 `Dockerfile`을 찾지 못함 (루트에 없거나, 커밋/푸시가 안 됨).
 - **해결**:

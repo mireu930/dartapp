@@ -128,9 +128,27 @@ def get_video_metadata(url: str, video_id: str | None = None) -> dict:
             "thumbnail": info.get('thumbnail', ''),
         }
 
+def _get_yt_dlp_cookiefile():
+    """yt-dlp용 쿠키 파일 경로 반환. 없으면 None."""
+    path = (os.environ.get("YT_DLP_COOKIES_PATH") or "").strip()
+    if path and os.path.isfile(path):
+        return path
+    # 인라인 쿠키(Netscape 형식): env에 넣고 YT_DLP_COOKIES 로 전달 시 임시 파일로 저장
+    raw = (os.environ.get("YT_DLP_COOKIES") or "").strip()
+    if not raw:
+        return None
+    try:
+        import tempfile
+        fd, tmp = tempfile.mkstemp(suffix=".txt", prefix="yt_dlp_cookies_")
+        with os.fdopen(fd, "w") as f:
+            f.write(raw)
+        return tmp
+    except Exception:
+        return None
+
+
 def download_audio(url, video_id):
-    """자막이 없을 때 오디오를 다운로드하는 함수"""
-    # 기존 파일 삭제
+    """자막이 없을 때 오디오를 다운로드하는 함수. 쿠키 설정 시 YouTube 봇 차단 완화."""
     for file in glob.glob(f"{video_id}.*"):
         try: os.remove(file)
         except: pass
@@ -141,6 +159,9 @@ def download_audio(url, video_id):
         'outtmpl': f'{video_id}',
         'quiet': True,
     }
+    cookiefile = _get_yt_dlp_cookiefile()
+    if cookiefile:
+        ydl_opts['cookiefile'] = cookiefile
     with YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
     return f"{video_id}.mp3"
@@ -217,9 +238,17 @@ async def analyze_recipe(request: AnalyzeRequest):
         except Exception as e:
             print(f"❌ 오디오 분석 실패: {e}")
             traceback.print_exc()
+            err_str = str(e)
+            if "bot" in err_str.lower() or "Sign in" in err_str or "cookies" in err_str.lower():
+                msg = (
+                    "이 영상에는 자막이 없고, 오디오 다운로드가 YouTube 제한으로 불가합니다. "
+                    "자막이 있는 요리 영상으로 시도해 주세요."
+                )
+            else:
+                msg = "자막을 찾을 수 없고 오디오 분석도 실패했습니다."
             raise HTTPException(
                 status_code=500,
-                detail=_error_body("NO_TRANSCRIPT", "자막을 찾을 수 없고 오디오 분석도 실패했습니다."),
+                detail=_error_body("NO_TRANSCRIPT", msg),
             )
 
     try:
