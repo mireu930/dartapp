@@ -142,17 +142,22 @@ def _get_yt_dlp_cookie_opts():
         print("   🍪 yt-dlp: 쿠키 파일 사용 (%s)" % path)
         return {"cookiefile": path}
 
-    # 3) 인라인 쿠키 (Netscape 형식). .env에서 \\n 은 실제 줄바꿈으로 치환
+    # 3) 인라인 쿠키 (Netscape 형식)
     raw = (os.environ.get("YT_DLP_COOKIES") or "").strip()
     if not raw:
         return {}
+    # .env/Render 등에서 줄바꿈이 빠져 한 줄로 들어온 경우 복구 (각 쿠키 라인은 .도메인\t 으로 시작)
     raw = raw.replace("\\n", "\n")
+    if "\n" not in raw and ".youtube.com\t" in raw:
+        import re
+        parts = re.split(r"(?=\.youtube\.com\t)", raw)
+        raw = "\n".join(p.strip() for p in parts if p.strip())
     try:
         import tempfile
         fd, tmp = tempfile.mkstemp(suffix=".txt", prefix="yt_dlp_cookies_")
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(raw)
-        print("   🍪 yt-dlp: 인라인 쿠키 사용 (임시 파일)")
+        print("   🍪 yt-dlp: 인라인 쿠키 사용 (임시 파일, %d bytes)" % len(raw))
         return {"cookiefile": tmp}
     except Exception as e:
         print("   ⚠️ yt-dlp 쿠키 임시 파일 생성 실패: %s" % e)
