@@ -9,12 +9,11 @@ class AppConstants {
 
   // API 설정
   /// 개발 환경 API Base URL (로컬 ngrok 등)
-  static const String devApiBaseUrl =
-      'https://usuriously-litten-deneen.ngrok-free.dev';
+  static const String devApiBaseUrl = 'https://dartapp.onrender.com';
 
   /// 프로덕션 API Base URL (앱 스토어 심사·배포용, 클라우드 배포 후 여기 넣기)
   /// 예: Render 배포 후 https://yorijori-api.onrender.com
-  static const String prodApiBaseUrl = 'https://api.yorijori.com';
+  static const String prodApiBaseUrl = 'https://dartapp.onrender.com';
 
   /// 현재 사용할 API Base URL (릴리스 빌드 = 프로덕션, 디버그 = 개발)
   static String get apiBaseUrl => kReleaseMode ? prodApiBaseUrl : devApiBaseUrl;

@@ -84,7 +84,41 @@ def extract_video_id(url):
         if match: return match.group(1)
     raise ValueError("올바른 유튜브 URL이 아닙니다.")
 
-def get_video_metadata(url):
+
+def get_video_metadata_via_api(video_id: str) -> dict | None:
+    """YouTube Data API v3로 메타데이터 조회 (봇 차단 없음). YOUTUBE_API_KEY 필요."""
+    api_key = (os.environ.get("YOUTUBE_API_KEY") or "").strip()
+    if not api_key:
+        return None
+    try:
+        import urllib.request
+        url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=snippet&key={api_key}"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+        items = data.get("items") or []
+        if not items:
+            return None
+        sn = items[0].get("snippet") or {}
+        thumb = (sn.get("thumbnails") or {}).get("default") or {}
+        return {
+            "title": sn.get("title") or "제목 없음",
+            "channel": sn.get("channelTitle") or "알 수 없음",
+            "thumbnail": thumb.get("url") or "",
+        }
+    except Exception as e:
+        print(f"   ⚠️ YouTube API 메타데이터 조회 실패: {e}")
+        return None
+
+
+def get_video_metadata(url: str, video_id: str | None = None) -> dict:
+    """영상 메타데이터 조회. YouTube API 우선, 없으면 yt-dlp 사용."""
+    vid = video_id or extract_video_id(url)
+    # 1) YouTube Data API 시도 (봇 차단 없음)
+    meta = get_video_metadata_via_api(vid)
+    if meta:
+        return meta
+    # 2) yt-dlp 사용 (봇 차단 시 쿠키 필요할 수 있음)
     ydl_opts = {'quiet': True, 'no_warnings': True}
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -123,7 +157,7 @@ async def analyze_recipe(request: AnalyzeRequest):
             detail=_error_body("INVALID_URL", "올바른 YouTube URL을 입력해 주세요."),
         )
     try:
-        metadata = get_video_metadata(request.url)
+        metadata = get_video_metadata(request.url, video_id=video_id)
     except Exception as e:
         print(f"❌ 영상 정보 조회 실패: {e}")
         traceback.print_exc()

@@ -25,11 +25,14 @@
 1. [render.com](https://render.com) 가입 후 로그인.
 2. **Dashboard** → **New** → **Web Service**.
 3. GitHub 저장소 연결 후:
-   - **Root Directory**: **비워 두기** (지우거나 비워 두면 저장소 루트 사용).
-   - **Environment**: **Docker** 선택. (루트의 `Dockerfile`이 백엔드용으로 사용됩니다.)
+   - **Root Directory**: **`yorijori`** 로 설정. (저장소가 `dartapp`이고 프로젝트가 `yorijori` 폴더 안에 있으면 필수.)
+   - **Dockerfile Path**: **`./Dockerfile`** (Root Directory 기준이면 기본값 그대로).
+   - **Environment**: **Docker** 선택.
    - **Instance Type**: Free 선택 (무료는 15분 미사용 시 슬립 → 첫 요청 시 지연 가능).
 4. **Environment** 탭에서 환경 변수 추가:
    - `GEMINI_API_KEY` = (Google AI Studio에서 발급한 Gemini API 키).
+   - **(선택)** `YOUTUBE_API_KEY` = YouTube Data API v3 키.  
+     YouTube가 “Sign in to confirm you're not a bot” 등으로 차단할 때, 메타데이터(제목·채널·썸네일)는 이 API로 조회합니다. [Google Cloud Console](https://console.cloud.google.com/) → API 및 서비스 → 사용 설정 → **YouTube Data API v3** → 사용자 인증 정보에서 API 키 생성.
 5. **Create Web Service**로 배포 시작.
 
 ### 3) URL 확인

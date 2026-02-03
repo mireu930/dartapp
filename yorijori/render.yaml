@@ -1,12 +1,12 @@
 # Render Blueprint - 요리조리 백엔드
-# Dashboard에서 "New > Blueprint"로 이 저장소 연결하면 서비스가 생성됩니다.
+# 저장소 구조: dartapp/yorijori/ (Dockerfile·backend가 yorijori/ 안에 있음)
 services:
   - type: web
     runtime: docker
     name: yorijori-api
-    # 저장소 루트의 Dockerfile 사용 (backend/ 폴더 내용을 이미지에 복사)
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    rootDir: yorijori
+    dockerfilePath: yorijori/Dockerfile
+    dockerContext: yorijori
     plan: free
     envVars:
       - key: GEMINI_API_KEY
